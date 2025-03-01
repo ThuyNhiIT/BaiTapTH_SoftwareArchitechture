@@ -12,7 +12,7 @@ import java.security.Principal;
 @RestController
 @RequestMapping("/api")
 public class DashboardController {
-    @PreAuthorize("hasAnyRole('SCOPE_ROLE_USER','SCOPE_ROLE_ADMIN','SCOPE_ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_ROLE_USER','SCOPE_ROLE_ADMIN','SCOPE_ROLE_SUPER_ADMIN')")
     @GetMapping("/welcome-message")
     public ResponseEntity<String> getFirstWelcomeMessage(Authentication authentication) {
         return ResponseEntity.ok(
