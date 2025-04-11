@@ -1,0 +1,34 @@
+version: '3.1'
+
+services:
+  db:
+    image: mysql:8.0  # Sử dụng MySQL 8.0
+    container_name: wordpress_db  # Tên container MySQL
+    restart: always
+    environment:
+      MYSQL_DATABASE: wordpress  # Tên database
+      MYSQL_USER: user  # Tên user
+      MYSQL_PASSWORD: password  # Mật khẩu user
+      MYSQL_ROOT_PASSWORD: rootpassword  # Mật khẩu root
+    volumes:
+      - db_data:/var/lib/mysql  # Lưu dữ liệu MySQL vào volume
+
+  wordpress:
+    image: wordpress:latest  # Sử dụng image WordPress mới nhất
+    container_name: wordpress_app  # Tên container WordPress
+    restart: always
+    depends_on:
+      - db  # Chạy MySQL trước khi chạy WordPress
+    ports:
+      - "8080:80"  # Map cổng 8080 của máy host với cổng 80 của container
+    environment:
+      WORDPRESS_DB_HOST: db:3306  # Kết nối đến container MySQL
+      WORDPRESS_DB_USER: user
+      WORDPRESS_DB_PASSWORD: password
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp_data:/var/www/html  # Lưu trữ dữ liệu WordPress
+
+volumes:
+  db_data:
+  wp_data:
