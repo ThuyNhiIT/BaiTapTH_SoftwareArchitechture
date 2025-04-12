@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/products/**
+        - id: customer-service
+          uri: lb://customer-service
+          predicates:
+            - Path=/profile/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/invoices/**
+      default-filters:
+        - AuthenticationFilter  # Áp dụng filter cho tất cả các route
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: Kq9zXj5mWv8nPq2rT4uY6iO0lJ3hF5gD
