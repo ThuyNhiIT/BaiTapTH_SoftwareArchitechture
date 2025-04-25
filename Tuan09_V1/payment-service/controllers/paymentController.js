@@ -1,121 +1,144 @@
+// Nhập mô hình Payment và thư viện CircuitBreaker
 const Payment = require('../models/Payment');
 const CircuitBreaker = require('opossum');
 
+// Cấu hình CircuitBreaker
 const breakerOptions = {
-    timeout: 3000, // Thời gian chờ tối đa cho mỗi yêu cầu (3 giây)
-    errorThresholdPercentage: 50, // Chuyển sang Open nếu 50% yêu cầu thất bại
-    resetTimeout: 10000, // Chờ 10 giây trước khi chuyển từ Open sang Half-Open
-    rollingCountTimeout: 30000, // Thu thập thống kê lỗi trong 30 giây
-    rollingCountBuckets: 10, // Chia 30 giây thành 10 bucket (mỗi bucket 3 giây)
-    errorFilter: (err) => {
-        // Bỏ qua lỗi 400 (Bad Request) để không tính vào tỷ lệ lỗi
-        return err.message.includes('Invalid') || err.message.includes('No valid payment');
-    }
-};
-
-// Retry mechanism
-const retry = async (fn, retries = 3, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
-        try {
-            return await fn();
-        } catch (err) {
-            if (i === retries - 1) throw err;
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-};
-
-// Time Limiter
-const timeLimit = (fn, timeout) => {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('Operation timed out')), timeout);
-        fn().then(result => {
-            clearTimeout(timer);
-            resolve(result);
-        }).catch(err => {
-            clearTimeout(timer);
-            reject(err);
-        });
-    });
+    timeout: 3000,
+    errorThresholdPercentage: 50, // là 50% số yêu cầu thất bại trước khi mở lại
+    resetTimeout: 5000,
+    rollingCount: 4 // Theo dõi 3 kết quả gần nhất
 };
 
 // Xử lý thanh toán
 const processPayment = async (req) => {
     const { orderId, amount } = req.body;
     if (!orderId || amount <= 0) {
-        throw new Error('Invalid orderId or amount');
+        throw new Error('Mã đơn hàng hoặc số tiền không hợp lệ');
     }
-    let payment = await Payment.findOne({ orderId });
-    if (payment) {
-        throw new Error('Payment already exists for this order');
+    const existingPayment = await Payment.findOne({ orderId });
+    if (existingPayment) {
+        throw new Error('Thanh toán đã tồn tại cho đơn hàng này');
     }
-    payment = new Payment({ orderId, amount, status: 'PAID' });
+    const payment = new Payment({ orderId, amount, status: 'PAID' });
     await payment.save();
-    return { orderId, status: 'PAID', message: `Payment processed for order: ${orderId}` };
+    return {
+        orderId,
+        status: payment.status,
+        message: `Thanh toán thành công cho đơn hàng: ${orderId}`
+    };
 };
 
-// Fallback khi Circuit Breaker ở trạng thái Open
-const fallback = (req) => {
-    return { message: 'Payment service temporarily unavailable. Please try again later.' };
+// Xử lý hoàn tiền
+const refundPayment = async (req) => {
+    const { orderId } = req.params;
+    const payment = await Payment.findOne({ orderId });
+    if (!payment) {
+        throw new Error('Không tìm thấy thanh toán');
+    }
+    if (payment.status !== 'PAID') {
+        throw new Error('Thanh toán không hợp lệ để hoàn tiền');
+    }
+    payment.status = 'REFUNDED';
+    await payment.save();
+    return {
+        orderId,
+        status: payment.status,
+        message: `Hoàn tiền thành công cho đơn hàng: ${orderId}`
+    };
 };
 
-const breaker = new CircuitBreaker(processPayment, breakerOptions);
-breaker.fallback(fallback);
+// Hàm dự phòng khi CircuitBreaker ở trạng thái Open
+const processPaymentFallback = () => {
+    return { message: 'Dịch vụ thanh toán tạm thời không khả dụng. Vui lòng thử lại sau.' };
+};
 
-// Theo dõi trạng thái Circuit Breaker
-breaker.on('open', () => {
-    console.log('Circuit Breaker: OPEN - Payment service is unavailable');
+const refundPaymentFallback = () => {
+    return { message: 'Dịch vụ hoàn tiền tạm thời không khả dụng. Vui lòng thử lại sau.' };
+};
+
+// Tạo CircuitBreaker cho từng hàm
+const processBreaker = new CircuitBreaker(processPayment, breakerOptions);
+const refundBreaker = new CircuitBreaker(refundPayment, breakerOptions);
+
+// Gán hàm dự phòng
+processBreaker.fallback(processPaymentFallback);
+refundBreaker.fallback(refundPaymentFallback);
+
+// Theo dõi trạng thái CircuitBreaker
+processBreaker.on('open', () => {
+    console.log('Circuit Breaker (Thanh toán): MỞ - Dịch vụ thanh toán không khả dụng');
 });
-breaker.on('halfOpen', () => {
-    console.log('Circuit Breaker: HALF-OPEN - Testing Payment service');
+processBreaker.on('halfOpen', () => {
+    console.log('Circuit Breaker (Thanh toán): NỬA MỞ - Đang kiểm tra dịch vụ thanh toán');
 });
-breaker.on('close', () => {
-    console.log('Circuit Breaker: CLOSED - Payment service is operational');
+processBreaker.on('close', () => {
+    console.log('Circuit Breaker (Thanh toán): ĐÓNG - Dịch vụ thanh toán hoạt động bình thường');
 });
-breaker.on('success', () => {
-    console.log('Circuit Breaker: Request succeeded');
+processBreaker.on('success', () => {
+    console.log('Circuit Breaker (Thanh toán): Yêu cầu thành công');
 });
-breaker.on('failure', (err) => {
-    console.log(`Circuit Breaker: Request failed - ${err.message}`);
+processBreaker.on('failure', (err) => {
+    console.log(`Circuit Breaker (Thanh toán): Yêu cầu thất bại - ${err.message}`);
 });
 
-class PaymentController {
-    static async processPayment(req, res) {
-        try {
-            const result = await retry(() => timeLimit(() => breaker.fire(req), 5000));
-            res.json(result);
-        } catch (err) {
-            res.status(500).json({ message: 'Payment service unavailable: ' + err.message });
-        }
+refundBreaker.on('open', () => {
+    console.log('Circuit Breaker (Hoàn tiền): MỞ - Dịch vụ hoàn tiền không khả dụng');
+});
+refundBreaker.on('halfOpen', () => {
+    console.log('Circuit Breaker (Hoàn tiền): NỬA MỞ - Đang kiểm tra dịch vụ hoàn tiền');
+});
+refundBreaker.on('close', () => {
+    console.log('Circuit Breaker (Hoàn tiền): ĐÓNG - Dịch vụ hoàn tiền hoạt động bình thường');
+});
+refundBreaker.on('success', () => {
+    console.log('Circuit Breaker (Hoàn tiền): Yêu cầu thành công');
+});
+refundBreaker.on('failure', (err) => {
+    console.log(`Circuit Breaker (Hoàn tiền): Yêu cầu thất bại - ${err.message}`);
+});
+
+// Hàm xử lý yêu cầu thanh toán
+const processPaymentHandler = async (req, res) => {
+    try {
+        const result = await processBreaker.fire(req);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
+};
 
-    static async refundPayment(req, res) {
+// Hàm xử lý yêu cầu hoàn tiền
+const refundPaymentHandler = async (req, res) => {
+    try {
+        const result = await refundBreaker.fire(req);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+};
+
+// Hàm lấy trạng thái thanh toán
+const getPaymentStatus = async (req, res) => {
+    try {
         const { orderId } = req.params;
-        try {
-            const payment = await Payment.findOne({ orderId });
-            if (!payment || payment.status !== 'PAID') {
-                throw new Error('No valid payment found for refund');
-            }
-            payment.status = 'REFUNDED';
-            await payment.save();
-            res.json({ orderId, status: 'REFUNDED', message: `Refund processed for order: ${orderId}` });
-        } catch (err) {
-            res.status(400).json({ message: err.message });
+        const payment = await Payment.findOne({ orderId });
+        if (!payment) {
+            return res.status(404).json({ message: 'Không tìm thấy thanh toán' });
         }
+        res.status(200).json({
+            orderId,
+            status: payment.status,
+            amount: payment.amount
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
+};
 
-    static async getPaymentStatus(req, res) {
-        const { orderId } = req.params;
-        try {
-            const payment = await Payment.findOne({ orderId });
-            if (!payment) {
-                return res.status(404).json({ message: 'Payment not found' });
-            }
-            res.json({ orderId, status: payment.status, amount: payment.amount });
-        } catch (err) {
-            res.status(500).json({ message: err.message });
-        }
-    }
-}
-
-module.exports = PaymentController;
+// Xuất các hàm
+module.exports = {
+    processPayment: processPaymentHandler,
+    refundPayment: refundPaymentHandler,
+    getPaymentStatus
+};

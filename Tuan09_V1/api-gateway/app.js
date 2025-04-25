@@ -1,79 +1,159 @@
 const express = require('express');
-const axios = require('axios');
-const rateLimit = require('express-rate-limit');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const cors = require('cors');
+require('dotenv').config();
+
 const app = express();
 
+// Kích hoạt CORS
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
+// Middleware parse JSON
 app.use(express.json());
 
-// Rate Limiter configuration
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // Limit each IP to 100 requests
-});
-app.use(limiter);
-
-// Service URLs
-const services = {
-    orders: 'http://localhost:3004',
-    products: 'http://localhost:3005',
-    payments: 'http://localhost:3006',
-    shipping: 'http://localhost:3007'
-};
-
-// Proxy requests to Order Service
-app.use('/api/invoices', async (req, res) => {
-    try {
-        const response = await axios({
-            method: req.method,
-            url: `${services.orders}${req.originalUrl}`,
-            data: req.body
-        });
-        res.json(response.data);
-    } catch (err) {
-        res.status(500).json({ message: 'Error forwarding to Order Service: ' + err.message });
-    }
+// Log tất cả yêu cầu
+app.use((req, res, next) => {
+    console.log(`[API Gateway] Yêu cầu đến: ${req.method} ${req.originalUrl}`);
+    console.log(`[API Gateway] Body:`, req.body);
+    next();
 });
 
-// Proxy requests to Product-Inventory Service
-app.use('/api/products', async (req, res) => {
-    try {
-        const response = await axios({
-            method: req.method,
-            url: `${services.products}${req.originalUrl}`,
-            data: req.body
-        });
-        res.json(response.data);
-    } catch (err) {
-        res.status(500).json({ message: 'Error forwarding to Product-Inventory Service: ' + err.message });
-    }
+// Proxy đến Order Service
+app.use(
+    '/orders',
+    (req, res, next) => {
+        console.log(`[API Gateway] Chuyển tiếp đến Order Service: ${req.method} ${req.originalUrl}`);
+        next();
+    },
+    createProxyMiddleware({
+        target: 'http://localhost:3005/api/orders', // Chỉ định gốc của Order Service
+        changeOrigin: true,
+        proxyTimeout: 10000,
+        timeout: 10000,
+        pathRewrite: {
+            '^/orders': '/api/orders' // Chuyển /orders thành /api/orders
+        },
+        onError: (err, req, res) => {
+            console.error(`[API Gateway] Lỗi khi chuyển tiếp đến Order Service: ${err.message}`);
+            res.status(500).json({ message: 'Lỗi kết nối đến Dịch vụ Đơn hàng', error: err.message });
+        },
+        onProxyReq: (proxyReq, req, res) => {
+            console.log('[HPM] Proxy request sent to:', proxyReq.path);
+        },
+        onProxyRes: (proxyRes, req, res) => {
+            console.log('[HPM] Proxy response received:', proxyRes.statusCode);
+        }
+    })
+);
+
+// Proxy đến Product-Inventory Service
+app.use(
+    '/products',
+    (req, res, next) => {
+        console.log(`[API Gateway] Chuyển tiếp đến Product-Inventory Service: ${req.method} ${req.originalUrl}`);
+        console.log(`[API Gateway] Body gửi đi:`, req.body);
+        next();
+    },
+    createProxyMiddleware({
+        target: 'http://localhost:3004/api/products', // Chỉ định gốc của Inventory Service
+        changeOrigin: true,
+        proxyTimeout: 20000,
+        timeout: 20000,
+        pathRewrite: {
+            '^/products': '/api/products' // Chuyển /products thành /api/products
+        },
+        onError: (err, req, res) => {
+            console.error(`[API Gateway] Lỗi khi chuyển tiếp đến Product-Inventory Service: ${err.message}`);
+            res.status(500).json({ message: 'Lỗi kết nối đến Dịch vụ Sản phẩm và Tồn kho', error: err.message });
+        },
+        onProxyReq: (proxyReq, req, res) => {
+            console.log('[HPM] Proxy request sent to:', proxyReq.path);
+        },
+        onProxyRes: (proxyRes, req, res) => {
+            console.log('[HPM] Proxy response received:', proxyRes.statusCode);
+        }
+    })
+);
+
+// Proxy đến Payment Service
+app.use(
+    '/payments',
+    (req, res, next) => {
+        console.log(`[API Gateway] Chuyển tiếp đến Payment Service: ${req.method} ${req.originalUrl}`);
+        next();
+    },
+    createProxyMiddleware({
+        target: 'http://localhost:3006/api/payments', // Chỉ định gốc của Payment Service
+        changeOrigin: true,
+        proxyTimeout: 10000,
+        timeout: 10000,
+        pathRewrite: {
+            '^/payments': '/api/payments' // Chuyển /payments thành /api/payments
+        },
+        onError: (err, req, res) => {
+            console.error(`[API Gateway] Lỗi khi chuyển tiếp đến Payment Service: ${err.message}`);
+            res.status(500).json({ message: 'Lỗi kết nối đến Dịch vụ Thanh toán', error: err.message });
+        },
+        onProxyReq: (proxyReq, req, res) => {
+            console.log('[HPM] Proxy request sent to:', proxyReq.path);
+        },
+        onProxyRes: (proxyRes, req, res) => {
+            console.log('[HPM] Proxy response received:', proxyRes.statusCode);
+        }
+    })
+);
+
+// Proxy đến Shipping Service
+app.use(
+    '/products',
+    (req, res, next) => {
+        console.log(`[API Gateway] Chuyển tiếp đến Product-Inventory Service: ${req.method} ${req.originalUrl}`);
+        console.log(`[API Gateway] Body gửi đi:`, req.body);
+        console.log(`[API Gateway] Headers gửi đi:`, req.headers);
+        next();
+    },
+    createProxyMiddleware({
+        target: 'http://localhost:3004/api/products',
+        changeOrigin: true,
+        timeout: 15000, // 15 giây
+        proxyTimeout: 15000, // 15 giây
+        pathRewrite: {
+            '^/products': '/api/products'
+        },
+        onProxyReq: (proxyReq, req, res) => {
+            // Đảm bảo Content-Length đúng
+            if (req.body) {
+                const bodyData = JSON.stringify(req.body);
+                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+            }
+        },
+        onProxyRes: (proxyRes, req, res) => {
+            console.log(`[API Gateway] Phản hồi từ Product-Inventory Service: ${proxyRes.statusCode}`);
+        },
+        onError: (err, req, res) => {
+            console.log(`[API Gateway] Lỗi khi chuyển tiếp đến Product-Inventory Service: ${err.message}`);
+            res.status(500).json({ message: 'Lỗi kết nối đến Dịch vụ Sản phẩm và Tồn kho', error: err.message });
+        }
+    })
+);
+
+// Route kiểm tra sức khỏe
+app.get('/', (req, res) => {
+    res.json({ message: 'API Gateway đang hoạt động' });
 });
 
-// Proxy requests to Payment Service
-app.use('/api/payments', async (req, res) => {
-    try {
-        const response = await axios({
-            method: req.method,
-            url: `${services.payments}${req.originalUrl}`,
-            data: req.body
-        });
-        res.json(response.data);
-    } catch (err) {
-        res.status(500).json({ message: 'Error forwarding to Payment Service: ' + err.message });
-    }
+// Xử lý route không khớp
+app.use((req, res) => {
+    console.log(`[API Gateway] Không tìm thấy route: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ message: `Không thể ${req.method} ${req.originalUrl}` });
 });
 
-// Proxy requests to Shipping Service
-app.use('/api/shipments', async (req, res) => {
-    try {
-        const response = await axios({
-            method: req.method,
-            url: `${services.shipping}${req.originalUrl}`,
-            data: req.body
-        });
-        res.json(response.data);
-    } catch (err) {
-        res.status(500).json({ message: 'Error forwarding to Shipping Service: ' + err.message });
-    }
+// Khởi động server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`API Gateway đang chạy tại http://localhost:${PORT}`);
 });
-
-app.listen(3003, () => console.log('API Gateway running on port 3003'));

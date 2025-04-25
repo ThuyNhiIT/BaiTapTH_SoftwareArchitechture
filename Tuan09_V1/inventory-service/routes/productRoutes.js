@@ -1,10 +1,13 @@
+// Nhập thư viện Express và ProductInventoryController
 const express = require('express');
 const router = express.Router();
-const ProductInventoryController = require('../controllers/productController');
+const { createProduct, getProduct, updateInventory, getInventoryStatus } = require('../controllers/productController');
 
-router.post('/create', ProductInventoryController.createProduct);
-router.get('/:productId', ProductInventoryController.getProduct);
-router.post('/inventory/update', ProductInventoryController.updateInventory);
-router.get('/inventory/status/:productId', ProductInventoryController.getInventoryStatus);
+// Định nghĩa các route
+router.post('/create', createProduct);
+router.get('/:productId', getProduct);
+router.post('/inventory/update', updateInventory);
+router.get('/inventory/status/:productId', getInventoryStatus);
 
+// Xuất router
 module.exports = router;

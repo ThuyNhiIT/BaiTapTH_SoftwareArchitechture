@@ -1,8 +1,11 @@
+// Nhập thư viện Express và ShippingController
 const express = require('express');
 const router = express.Router();
-const ShippingController = require('../controllers/ShippingController');
+const { updateShipping, getShippingStatus } = require('../controllers/shippingController');
 
-router.post('/update', ShippingController.updateShipping);
-router.get('/status/:orderId', ShippingController.getShippingStatus);
+// Định nghĩa các route
+router.post('/update', updateShipping);
+router.get('/status/:orderId', getShippingStatus);
 
+// Xuất router
 module.exports = router;
