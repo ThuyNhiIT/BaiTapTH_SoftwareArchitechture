@@ -7,27 +7,35 @@ const breakerOptions = {
     timeout: 3000,
     errorThresholdPercentage: 50, // là 50% số yêu cầu thất bại trước khi mở lại
     resetTimeout: 5000,
-    rollingCount: 4 // Theo dõi 3 kết quả gần nhất
+    rollingCount: 4 // Theo dõi 4 kết quả gần nhất
 };
 
 // Tạo sản phẩm
-const createProduct = async (req) => {
-    const { name, price, description, quantity } = req.body;
-    if (!name || !price || quantity < 0) {
-        throw new Error('Dữ liệu sản phẩm không hợp lệ');
+const createProduct = async (req, res) => {
+    console.log("[Product Service] createProduct called with:", req.body); // Log đầu vào
+    try {
+        const { name, price, description, quantity } = req.body;
+        if (!name || !price || quantity < 0) {
+            console.log("[Product Service] Invalid product data"); // Log lỗi dữ liệu
+            throw new Error('Dữ liệu sản phẩm không hợp lệ');
+        }
+        const productId = `PROD-${Date.now()}`;
+        const product = new Product({ productId, name, price, description, quantity });
+        console.log("[Product Service] Creating product:", product); // Log trước khi tạo
+        await product.save();
+        console.log("[Product Service] Product saved successfully"); // Log thành công
+        return {
+            productId,
+            name,
+            price,
+            quantity,
+            message: `Tạo sản phẩm thành công: ${productId}`
+        };
+    } catch (err) {
+        console.error("[Product Service] Error creating product:", err); // Log lỗi
+        throw err; // Re-throw để API Gateway có thể xử lý (nếu cần)
     }
-    const productId = `PROD-${Date.now()}`;
-    const product = new Product({ productId, name, price, description, quantity });
-    await product.save();
-    return {
-        productId,
-        name,
-        price,
-        quantity,
-        message: `Tạo sản phẩm thành công: ${productId}`
-    };
 };
-
 // Cập nhật tồn kho
 const updateInventory = async (req) => {
     const { productId, quantity } = req.body;

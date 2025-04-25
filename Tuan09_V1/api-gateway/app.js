@@ -51,30 +51,47 @@ app.use(
 );
 
 // Proxy đến Product-Inventory Service
+// Proxy đến Product-Inventory Service
 app.use(
     '/products',
     (req, res, next) => {
         console.log(`[API Gateway] Chuyển tiếp đến Product-Inventory Service: ${req.method} ${req.originalUrl}`);
         console.log(`[API Gateway] Body gửi đi:`, req.body);
+        console.log(`[API Gateway] Headers gửi đi:`, req.headers);
         next();
     },
     createProxyMiddleware({
-        target: 'http://localhost:3004/api/products', // Chỉ định gốc của Inventory Service
+        target: 'http://localhost:3004/api/products', // Chỉ định gốc của Product-Inventory Service
         changeOrigin: true,
-        proxyTimeout: 20000,
-        timeout: 20000,
-        pathRewrite: {
-            '^/products': '/api/products' // Chuyển /products thành /api/products
-        },
-        onError: (err, req, res) => {
-            console.error(`[API Gateway] Lỗi khi chuyển tiếp đến Product-Inventory Service: ${err.message}`);
-            res.status(500).json({ message: 'Lỗi kết nối đến Dịch vụ Sản phẩm và Tồn kho', error: err.message });
+        timeout: 15000,
+        proxyTimeout: 15000,
+        pathRewrite: (path, req) => {
+            // console.log("Original Path:", path); // Để debug
+
+            if (path === '/products/create') {
+                return '/api/products/create'; // POST /products/create -> /api/products/create
+            } else if (path.startsWith('/products/inventory/update')) {
+                return '/api/products/inventory/update'; // POST /products/inventory/update -> /api/products/inventory/update
+            } else if (path.startsWith('/products/inventory/status/')) {
+                return path.replace('/products', '/api/products');  // GET /products/inventory/status/:productId -> /api/products/inventory/status/:productId
+            }
+            else if (path.startsWith('/products/')) {
+                 return path.replace('/products', '/api/products');
+            }
         },
         onProxyReq: (proxyReq, req, res) => {
-            console.log('[HPM] Proxy request sent to:', proxyReq.path);
+            // Đảm bảo Content-Length đúng
+            if (req.body) {
+                const bodyData = JSON.stringify(req.body);
+                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+            }
         },
         onProxyRes: (proxyRes, req, res) => {
-            console.log('[HPM] Proxy response received:', proxyRes.statusCode);
+            console.log(`[API Gateway] Phản hồi từ Product-Inventory Service: ${proxyRes.statusCode}`);
+        },
+        onError: (err, req, res) => {
+            console.log(`[API Gateway] Lỗi khi chuyển tiếp đến Product-Inventory Service: ${err.message}`);
+            res.status(500).json({ message: 'Lỗi kết nối đến Dịch vụ Sản phẩm và Tồn kho', error: err.message });
         }
     })
 );
