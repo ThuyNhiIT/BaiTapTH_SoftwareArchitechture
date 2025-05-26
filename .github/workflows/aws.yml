@@ -29,18 +29,72 @@ jobs:
       - name: 🚚 Upload JAR file to EC2
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_KEY }}
+          host: 3.106.165.85
+          username: ec2-user
+          key: 
+              -----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEApr9PcIW7kWXN5cVRpmej5OD9fQqrAYoGZD/wlJVVrXHFAyVR
+1/t7Pktjn71Kx1puWEmMOgOvkygkwdo/EL/YHZmv7764qczPMgXt7V3L0XSzJxsn
+KTPThxo+bc9eI2UmWtCt7cuMi3u/aVuc2f0ZgoVT5lIaHuzW5c+EvuyE2CnQcYn8
+hnYBCL70lodFZQXIYzB33qoGCt+gkm/E8TwdnP1zo0wNNYIdu0NhxbLPM5dU32vx
+3XjNgLGypkGG0oCrL1rd/aIgq0j+/1NVDRS3nM0WWVQCAzfZ25jefpqpQMQo92I1
+uSSgsWpG1C2k0Z5P3X3GwImNM9HYOJ233hbTOwIDAQABAoIBABC4ppK2FnUiLF+a
+RfHV+s188m6Tn0psOO/cqZd80jaubf8+wtJR2a4JiVf/d3w+SUp5NaKrs/Oh1u3J
+oQFg+58cRlRYX9RHQY/WoGFpQoMinMSTKH4tQE0QCKqiXOJXxlzdCFQMUW+7XRqH
+oVcK1oAMNrmmChCH15T8Fme++CNlBIuHwI7847VHaiVs+P1yd7x4V6Y7o/tFx5Hs
+ppCJZkBJHGUYIFbkgdgBwbPJ/3gzxXGSCzVVN4RsvO/SQjgXKJulIlulzKTVMjzz
+y1HC84uJEQItW8mn7sVy5auyIf5UILRTb+EnhZVLxYq1Q0nZirI9u8YD/w+veBPD
+GJNyTQECgYEA2y2C7PH3dde0sSCDFdTNKlADN+MiXOuLqNKv3q+CvJ/Bc6POrbEq
+BvZVVxsFHHU+BHOzy4AaQUQMX86ChlbYjS/7CCQaAj9EpyyEmDw2TJu/OjSpl610
+qdqSQ/pQoOA7RJmvyOqGxkgguC1EIAaa+gJQLJkOJLOHVEtqenqncGECgYEAwsLY
+79fnnLbC7HwgmvrRbGl+bHHRvbtiMRl9MU/ni+2FrD2jfchmtOYiLBsv1J/+uRMU
++9oomoH48SBi1lJ38aM4pfwdsAEO0ZXOQnFEbJ8GNDTvDVpynaRofPeZHqPrP1fF
+RTUqIjWBOkLFcsDaVd1Xv7b+j3d3je2zJhLEmRsCgYBuDVUfOoPhxPSyt7t6W8bE
+xzZGeqMHezI+C8RJEWGY6rKNKSQe7MVIh6nkOeoAFxKT07DkrqcAPHXmKWA6qiLE
+CeKHfPEeTbxgIKdXdWxiXRXQ2R6KzYq1us0UmvyfOtgnou+z96bCqvba48fAOPDa
+Ng0hx5xla0u5VMDbTPkEIQKBgQCZ1v0y3rFFuZtY32eF468+2kmRcYqCOxyBuieI
+pxw4DEN1XS7iMUTniYzemA78/fBf0nHVymoeOaIhHTrVHkk+JnadrfrpRryk0pcd
+Joks36Qv4swdGR/F49LhO1bIvCQbYcIiO69vXCIamhmK3kjYYEFq3ypOushF5MeI
+wHRolwKBgQDFc1wGFxUgCjl5EbPt7zSBb8Vu4CEVbT1Q6Je+elzoBAfVQBXZtxni
+fbSg6620O88cA4nZA/gRk8ZQtU8+osnhx1YRghRiHHMYvR8ZagfzPVHzujFrrb++
+uvwrkCasWXO46idL96OgMyPVexluXY/kPecrgwBaG0AJkpu20r9N9g==
+-----END RSA PRIVATE KEY-----
           source: "target/*.jar"
           target: "/home/ec2-user/app"
 
       - name: 🔁 SSH và restart Java app
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_KEY }}
+          host: 3.106.165.85
+          username: ec2-user
+          key: 
+              -----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEApr9PcIW7kWXN5cVRpmej5OD9fQqrAYoGZD/wlJVVrXHFAyVR
+1/t7Pktjn71Kx1puWEmMOgOvkygkwdo/EL/YHZmv7764qczPMgXt7V3L0XSzJxsn
+KTPThxo+bc9eI2UmWtCt7cuMi3u/aVuc2f0ZgoVT5lIaHuzW5c+EvuyE2CnQcYn8
+hnYBCL70lodFZQXIYzB33qoGCt+gkm/E8TwdnP1zo0wNNYIdu0NhxbLPM5dU32vx
+3XjNgLGypkGG0oCrL1rd/aIgq0j+/1NVDRS3nM0WWVQCAzfZ25jefpqpQMQo92I1
+uSSgsWpG1C2k0Z5P3X3GwImNM9HYOJ233hbTOwIDAQABAoIBABC4ppK2FnUiLF+a
+RfHV+s188m6Tn0psOO/cqZd80jaubf8+wtJR2a4JiVf/d3w+SUp5NaKrs/Oh1u3J
+oQFg+58cRlRYX9RHQY/WoGFpQoMinMSTKH4tQE0QCKqiXOJXxlzdCFQMUW+7XRqH
+oVcK1oAMNrmmChCH15T8Fme++CNlBIuHwI7847VHaiVs+P1yd7x4V6Y7o/tFx5Hs
+ppCJZkBJHGUYIFbkgdgBwbPJ/3gzxXGSCzVVN4RsvO/SQjgXKJulIlulzKTVMjzz
+y1HC84uJEQItW8mn7sVy5auyIf5UILRTb+EnhZVLxYq1Q0nZirI9u8YD/w+veBPD
+GJNyTQECgYEA2y2C7PH3dde0sSCDFdTNKlADN+MiXOuLqNKv3q+CvJ/Bc6POrbEq
+BvZVVxsFHHU+BHOzy4AaQUQMX86ChlbYjS/7CCQaAj9EpyyEmDw2TJu/OjSpl610
+qdqSQ/pQoOA7RJmvyOqGxkgguC1EIAaa+gJQLJkOJLOHVEtqenqncGECgYEAwsLY
+79fnnLbC7HwgmvrRbGl+bHHRvbtiMRl9MU/ni+2FrD2jfchmtOYiLBsv1J/+uRMU
++9oomoH48SBi1lJ38aM4pfwdsAEO0ZXOQnFEbJ8GNDTvDVpynaRofPeZHqPrP1fF
+RTUqIjWBOkLFcsDaVd1Xv7b+j3d3je2zJhLEmRsCgYBuDVUfOoPhxPSyt7t6W8bE
+xzZGeqMHezI+C8RJEWGY6rKNKSQe7MVIh6nkOeoAFxKT07DkrqcAPHXmKWA6qiLE
+CeKHfPEeTbxgIKdXdWxiXRXQ2R6KzYq1us0UmvyfOtgnou+z96bCqvba48fAOPDa
+Ng0hx5xla0u5VMDbTPkEIQKBgQCZ1v0y3rFFuZtY32eF468+2kmRcYqCOxyBuieI
+pxw4DEN1XS7iMUTniYzemA78/fBf0nHVymoeOaIhHTrVHkk+JnadrfrpRryk0pcd
+Joks36Qv4swdGR/F49LhO1bIvCQbYcIiO69vXCIamhmK3kjYYEFq3ypOushF5MeI
+wHRolwKBgQDFc1wGFxUgCjl5EbPt7zSBb8Vu4CEVbT1Q6Je+elzoBAfVQBXZtxni
+fbSg6620O88cA4nZA/gRk8ZQtU8+osnhx1YRghRiHHMYvR8ZagfzPVHzujFrrb++
+uvwrkCasWXO46idL96OgMyPVexluXY/kPecrgwBaG0AJkpu20r9N9g==
+-----END RSA PRIVATE KEY-----
           script: |
             cd /home/ec2-user/app
             pkill -f 'java -jar' || true
