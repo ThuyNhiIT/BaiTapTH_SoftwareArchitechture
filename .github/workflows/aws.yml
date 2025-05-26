@@ -31,7 +31,7 @@ jobs:
         with:
           host: 3.106.165.85
           username: ec2-user
-          key: 
+          key: |
               -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEApr9PcIW7kWXN5cVRpmej5OD9fQqrAYoGZD/wlJVVrXHFAyVR
 1/t7Pktjn71Kx1puWEmMOgOvkygkwdo/EL/YHZmv7764qczPMgXt7V3L0XSzJxsn
@@ -67,7 +67,7 @@ uvwrkCasWXO46idL96OgMyPVexluXY/kPecrgwBaG0AJkpu20r9N9g==
         with:
           host: 3.106.165.85
           username: ec2-user
-          key: 
+          key: |
               -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEApr9PcIW7kWXN5cVRpmej5OD9fQqrAYoGZD/wlJVVrXHFAyVR
 1/t7Pktjn71Kx1puWEmMOgOvkygkwdo/EL/YHZmv7764qczPMgXt7V3L0XSzJxsn
