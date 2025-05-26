@@ -32,7 +32,6 @@ jobs:
           host: 3.106.165.85
           username: ec2-user
           key: |
-              -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEApr9PcIW7kWXN5cVRpmej5OD9fQqrAYoGZD/wlJVVrXHFAyVR
 1/t7Pktjn71Kx1puWEmMOgOvkygkwdo/EL/YHZmv7764qczPMgXt7V3L0XSzJxsn
 KTPThxo+bc9eI2UmWtCt7cuMi3u/aVuc2f0ZgoVT5lIaHuzW5c+EvuyE2CnQcYn8
@@ -58,7 +57,6 @@ Joks36Qv4swdGR/F49LhO1bIvCQbYcIiO69vXCIamhmK3kjYYEFq3ypOushF5MeI
 wHRolwKBgQDFc1wGFxUgCjl5EbPt7zSBb8Vu4CEVbT1Q6Je+elzoBAfVQBXZtxni
 fbSg6620O88cA4nZA/gRk8ZQtU8+osnhx1YRghRiHHMYvR8ZagfzPVHzujFrrb++
 uvwrkCasWXO46idL96OgMyPVexluXY/kPecrgwBaG0AJkpu20r9N9g==
------END RSA PRIVATE KEY-----
           source: "target/*.jar"
           target: "/home/ec2-user/app"
 
